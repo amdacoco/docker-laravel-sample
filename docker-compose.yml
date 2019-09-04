@@ -1,0 +1,65 @@
+version: "3"
+
+networks:
+  laravel:
+    driver: bridge
+
+volumes:
+  php:
+    driver: local
+  apache:
+    driver: local
+
+services:
+  # PHP Container
+  php:
+    build: ./etc/php
+    container_name: php
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./lara-dock:/var/www
+    networks:
+      - laravel
+
+  # Apache2 Container
+  apache:
+      build: ./etc/apache
+      container_name: apache
+      ports: 
+        - "80:80"
+        - "433:433"
+      volumes:
+        - ./lara-dock:/var/www
+        - ./etc/apache/sites:/etc/apache2/sites-available
+      depends_on:
+        - php
+        - mysql
+        - redis
+      networks:
+        - laravel
+
+  # MySQL Container
+  mysql:
+    build: ./etc/mysql
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=docker
+      - MYSQL_USER=docker_user
+      - MYSQL_PASSWORD=docker_password
+      - MYSQL_ROOT_PASSWORD=secret
+    volumes:
+      - ./etc/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - laravel
+
+  # Redis Container
+  redis:
+    build: ./etc/redis
+    container_name: redis
+    ports: 
+      - "6379:6379"
+    networks:
+      - laravel
